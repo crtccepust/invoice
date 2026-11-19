@@ -1,0 +1,118 @@
+/* ===== Sign-in, registration, modal & read-only (viewer) rules ===== */
+body:not(.in) header,body:not(.in) nav,body:not(.in) main {
+  display:none!important
+}
+
+body.in #auth {
+  display:none
+}
+
+#auth {
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  background:linear-gradient(135deg,var(--pr),#06335e)
+}
+
+.acard {
+  background:var(--card);
+  border-radius:14px;
+  padding:28px;
+  max-width:560px;
+  width:100%;
+  box-shadow:0 10px 40px rgba(0,0,0,.3)
+}
+
+.alogo {
+  font-size:26px;
+  font-weight:800;
+  color:var(--pr);
+  letter-spacing:3px
+}
+
+.acard h2 {
+  margin:4px 0
+}
+
+.mu {
+  color:var(--mu)
+}
+
+.atabs {
+  display:flex;
+  gap:6px;
+  margin:14px 0
+}
+
+.atabs button {
+  flex:1;
+  background:transparent;
+  color:var(--mu);
+  border:1px solid var(--bd)
+}
+
+.atabs button.on {
+  background:var(--pr);
+  color:#fff
+}
+
+.agrid {
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+  gap:10px;
+  margin-bottom:12px
+}
+
+.afull {
+  width:100%;
+  padding:10px;
+  font-size:15px
+}
+
+.amsg {
+  padding:9px 12px;
+  border-radius:6px;
+  margin-bottom:10px;
+  font-size:13px
+}
+
+.amsg.ok {
+  background:#e3f6ea;
+  color:#14633a
+}
+
+.amsg.bad {
+  background:#fdeaea;
+  color:#a32718
+}
+
+.mback {
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.5);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:99;
+  padding:16px
+}
+
+.mcard {
+  background:var(--card);
+  padding:22px;
+  border-radius:12px;
+  max-width:380px;
+  width:100%
+}
+
+.ro [onclick*="delInv"],.ro [onclick*="dupInv"],.ro [onclick*="newInv"],.ro [onclick*="'edit')"],.ro [onclick*="DB.rates.push"],.ro [onclick*="resetRates"],.ro #rt button {
+  display:none
+}
+
+.ro #rt input {
+  pointer-events:none
+}
+
+.alogo-img { height: 48px; width: auto; }

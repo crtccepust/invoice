@@ -1,0 +1,10 @@
+/* Test & rate list view. */
+function vRates(){
+  $('#app').innerHTML=`<div class="row"><b>Test & rate list</b> <span style="color:var(--mu)">(${DB.rates.length} items; edits apply to new invoice lines only)</span><span class="sp"></span><input id="rq" style="max-width:240px" placeholder="Search test / code / standard" oninput="rateSearch(this.value)"><button onclick="DB.rates.push({code:'',cat:'',test:'New test',std:'',unit:'Per Sample',rate:0,mat:''});persist();vRates()">+ Add test</button><button class="g" onclick="resetRates()">Load CRTC official rates</button></div>
+  <div class="tw"><table id="rt"><tr><th>Code</th><th>Category</th><th style="min-width:260px">Test</th><th>Standard</th><th>Required material</th><th>Unit</th><th>Rate</th><th></th></tr>
+  ${DB.rates.map((r,k)=>`<tr data-s="${esc([r.code,r.cat,r.test,r.std].join(' ').toLowerCase())}">${['code','cat','test','std','mat','unit'].map(f=>`<td><input value="${esc(r[f])}" oninput="DB.rates[${k}].${f}=this.value;persist()"></td>`).join('')}<td><input type="number" step="any" style="width:110px" value="${r.rate}" oninput="DB.rates[${k}].rate=+this.value;persist()"></td><td><button class="g" onclick="DB.rates.splice(${k},1);persist();vRates()">✕</button></td></tr>`).join('')}</table></div>
+  <p style="color:var(--mu)">Consultancy services are rate-on-request (rate 0): enter the agreed amount on the invoice line.</p>`}
+function rateSearch(v){v=v.toLowerCase();document.querySelectorAll('#rt tr[data-s]').forEach(t=>t.style.display=t.dataset.s.includes(v)?'':'none')}
+function resetRates(){if(confirm('Replace the whole list with the official CRTC rate list? Your edits to the list will be lost (existing invoices are not affected).')){DB.rates=RT(CRTC_RATES);persist();vRates()}}
+function testOpts(code){const g={};DB.rates.forEach((r,j)=>{const c=r.cat||'Other';(g[c]=g[c]||[]).push(`<option value="${j}" ${code===r.code?'selected':''}>${esc(r.code+' – '+r.test)}</option>`)});
+  return '<option value="">Custom</option>'+Object.entries(g).map(([c,o])=>`<optgroup label="${esc(c)}">${o.join('')}</optgroup>`).join('')}
