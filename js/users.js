@@ -1,6 +1,6 @@
 /* Admin user management (approve / reject / roles / reset / delete). */
 async function vUsers(){$('#app').innerHTML='<p>Loading users…</p>';
-  try{const j=await rpc('users.list');UL=j.users.sort((a,b)=>(b.status==='pending')-(a.status==='pending')||a.name.localeCompare(b.name));PEND=UL.filter(u=>u.status==='pending').length;nav();
+  try{const j=await rpc('users.list',{},'Loading users…');UL=j.users.sort((a,b)=>(b.status==='pending')-(a.status==='pending')||a.name.localeCompare(b.name));PEND=UL.filter(u=>u.status==='pending').length;nav();
   const tag=s=>`<span class="tag ${s==='approved'?'Paid':s==='pending'?'Sent':s==='rejected'?'Overdue':'Cancelled'}">${s}</span>`,B=(k,op,l,c='g')=>`<button class="${c}" onclick="uact(${k},'${op}')">${l}</button>`;
   $('#app').innerHTML=`<div class="row"><b>User accounts</b><span class="sp"></span><span class="mu">${PEND} awaiting approval</span></div><p class="mu" style="margin-top:-4px">Admin: everything · Faculty: edit &amp; delete invoices · Staff: edit, delete needs Admin approval · Others: view only</p><div class="tw"><table><tr><th>Name</th><th>Organisation / designation</th><th>Contact</th><th>Role</th><th>Status</th><th>Registered</th><th>Actions</th></tr>
   ${UL.map((u,k)=>{const me=u.email===SES.user.email;return`<tr><td><b>${esc(u.name)}</b></td><td>${esc(u.org||'')}<br><small class="mu">${esc(u.designation||'')}</small></td><td>${esc(u.email)}<br><small class="mu">${esc(u.phone||'')}</small></td>
@@ -9,4 +9,4 @@ async function vUsers(){$('#app').innerHTML='<p>Loading users…</p>';
   <h3>Recent activity</h3><div class="tw"><table><tr><th>Time</th><th>User</th><th>Event</th></tr>${j.log.slice(0,30).map(l=>`<tr><td>${new Date(l.t).toLocaleString()}</td><td>${esc(l.u)}</td><td>${esc(l.e)}</td></tr>`).join('')}</table></div>`}
   catch(e){if(e.message!=='auth')$('#app').innerHTML='<p>Could not load users: '+esc(e.message)+'</p>'}}
 async function uact(k,op,role){const u=UL[k];if(op==='approve'&&!role){const e=document.querySelector('#rs'+k);role=e&&e.value}if(op==='delete'&&!confirm('Delete '+u.email+' permanently?'))return;if(op==='reject'&&!confirm('Reject this registration?'))return;
-  try{const j=await rpc('users.act',{email:u.email,op,role});if(op==='reset')alert('Temporary password for '+u.email+':\n\n'+j.temp+'\n\nIt has also been emailed. The user must change it at next sign-in.');vUsers()}catch(e){if(e.message!=='auth')alert(e.message);vUsers()}}
+  try{const j=await rpc('users.act',{email:u.email,op,role},'Updating…');if(op==='reset')alert('Temporary password for '+u.email+':\n\n'+j.temp+'\n\nIt has also been emailed. The user must change it at next sign-in.');vUsers()}catch(e){if(e.message!=='auth')alert(e.message);vUsers()}}
