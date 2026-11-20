@@ -9,7 +9,8 @@ crtc-invoice/
 ├── index.html            # App shell (loads CSS and JS in order)
 ├── css/
 │   ├── style.css         # Base, layout, components
-│   ├── auth.css          # Sign-in, registration, modal, read-only (viewer) rules
+│   ├── auth.css          # Sign-in, registration, modal, read-only rules
+│   ├── dashboard.css     # Dashboard cards and charts
 │   └── print.css         # A4 / official-pad print rules
 ├── js/                   # Classic scripts, loaded in this order:
 │   ├── config.js         # API_URL  <- the only file you must edit
@@ -23,6 +24,7 @@ crtc-invoice/
 │   ├── invoices.js       # Invoice list, editor, preview/print, payments
 │   ├── rates.js          # Test & rate list view
 │   ├── clients.js        # Clients view
+│   ├── dashboard.js      # Dashboard: KPIs and charts (inline SVG, no libraries)
 │   ├── settings.js       # Company, bank, QR, official pad, backup, logo
 │   ├── verify.js         # QR link, public registry, public verify page
 │   └── main.js           # Entry point
@@ -53,11 +55,17 @@ crtc-invoice/
 ### 3. Users
 People register on the sign-in page. Their account stays *pending* until an admin approves it under **Users**.
 
-| Role   | Can do |
-|--------|--------|
-| Admin  | Everything, including Users and Settings |
-| Staff  | Create/edit invoices, rates and clients |
-| Viewer | Read-only (enforced by the server) |
+| Role | Can do |
+|------|--------|
+| **Admin** | Everything: Users, Settings, edit and delete invoices, approve delete requests |
+| **Faculty** | Create, edit and **delete** invoices; edit rates and clients |
+| **Staff** | Create and edit invoices; **cannot delete**. "Request delete" sends the request to an Admin, who approves or rejects it |
+| **Others** | View only (dashboard, invoices, rates) |
+
+Roles are enforced on the server: a Staff account cannot remove an invoice even by editing the page.
+
+## Dashboard
+Opens after sign-in: total invoiced, collected, outstanding, overdue and average invoice; 12-month revenue chart (invoiced vs collected); invoice status and payment-method donuts; collection rate; outstanding ageing; billed value by test category; top clients; most requested tests; recent invoices. Filter by this month, quarter, year or all time. Admins also see pending registrations and delete requests.
 
 ## Printing on the CRTC official pad
 Preview an invoice, tick **Official pad (no letterhead)**, set the top/bottom blank space in Settings, then print: paper **A4**, scale **100%**, headers and footers **off**.

@@ -3,15 +3,25 @@ function newInv(){const s=DB.settings;return{id:'',no:s.prefix+String(DB.next).p
 function vList(){
   let L=DB.invoices.filter(i=>(!filter.st||status(i)===filter.st)&&(!filter.q||(i.no+i.client+i.project).toLowerCase().includes(filter.q.toLowerCase())));
   const act=DB.invoices.filter(i=>!['Draft','Cancelled'].includes(status(i))),dueOf=a=>a.reduce((s,i)=>s+calc(i).due,0);
-  $('#app').innerHTML=`<div class="stats"><div class="stat">Invoices<b>${DB.invoices.length}</b></div><div class="stat">Collected<b>${money(act.reduce((s,i)=>s+calc(i).paid,0))}</b></div><div class="stat">Outstanding<b>${money(dueOf(act))}</b></div><div class="stat">Overdue<b>${money(dueOf(act.filter(i=>status(i)==='Overdue')))}</b></div></div>
+  $('#app').innerHTML=`${delPanel()}<div class="stats"><div class="stat">Invoices<b>${DB.invoices.length}</b></div><div class="stat">Collected<b>${money(act.reduce((s,i)=>s+calc(i).paid,0))}</b></div><div class="stat">Outstanding<b>${money(dueOf(act))}</b></div><div class="stat">Overdue<b>${money(dueOf(act.filter(i=>status(i)==='Overdue')))}</b></div></div>
   <div class="row"><input style="max-width:260px" placeholder="Search no., client, project" value="${esc(filter.q)}" oninput="filter.q=this.value;vList()" autofocus>
   <select style="max-width:150px" onchange="filter.st=this.value;vList()"><option value="">All status</option>${['Draft','Sent','Partial','Paid','Overdue','Cancelled'].map(s=>`<option ${filter.st==s?'selected':''}>${s}</option>`).join('')}</select><span class="sp"></span><button class="g" onclick="exportCSV()">Export CSV</button><button onclick="cur=newInv();go('edit')">+ New invoice</button></div>
   <div class="tw"><table><tr><th>No.</th><th>Date</th><th>Client</th><th>Project</th><th class="r">Total</th><th class="r">Balance</th><th>Status</th><th></th></tr>
   ${L.map(i=>`<tr><td>${esc(i.no)}</td><td>${i.date}</td><td>${esc(i.client)}</td><td>${esc(i.project)}</td><td class="r">${money(calc(i).total)}</td><td class="r">${status(i)==='Draft'||status(i)==='Cancelled'?'—':money(calc(i).due)}</td><td><span class="tag ${status(i)}">${status(i)}</span></td>
-  <td style="white-space:nowrap"><button class="g" onclick="openInv('${i.id}','edit')">Edit</button> <button class="g" onclick="openInv('${i.id}','preview')">View</button> <button class="g" onclick="dupInv('${i.id}')">Copy</button> <button class="g" onclick="delInv('${i.id}')">✕</button></td></tr>`).join('')||'<tr><td colspan=7>No invoices yet.</td></tr>'}</table></div>`}
+  <td style="white-space:nowrap"><button class="g" onclick="openInv('${i.id}','edit')">Edit</button> <button class="g" onclick="openInv('${i.id}','preview')">View</button> <button class="g" onclick="dupInv('${i.id}')">Copy</button> ${(DB.delReq||[]).some(r=>r.id===i.id)?'<span class="tag Sent">Delete requested</span>':`<button class="g" onclick="delInv('${i.id}')">${can('del')?'✕':'Request delete'}</button>`}</td></tr>`).join('')||'<tr><td colspan=7>No invoices yet.</td></tr>'}</table></div>`}
 function openInv(id,v){cur=structuredClone(DB.invoices.find(i=>i.id===id));view=v;draw()}
 function dupInv(id){cur=structuredClone(DB.invoices.find(i=>i.id===id));const n=newInv();cur={...cur,id:'',no:n.no,date:n.date,due:n.due,status:'Draft',pay:[],crtc:'',deliv:''};go('edit')}
-function delInv(id){if(confirm('Delete this invoice?')){const x=DB.invoices.find(i=>i.id===id);if(x&&x.status!=='Draft')(DB.void=DB.void||[]).push(x.no);DB.invoices=DB.invoices.filter(i=>i.id!==id);persist();syncRegistry();vList()}}
+function delInv(id){const x=DB.invoices.find(i=>i.id===id);if(!x)return;
+  if(!can('del')){   // Staff: send a delete request to the Admin
+    if((DB.delReq||[]).some(r=>r.id===id))return alert('A delete request for this invoice is already waiting for Admin approval.');
+    const why=prompt('Reason for deleting '+x.no+' (sent to Admin for approval):');if(why===null)return;
+    (DB.delReq=DB.delReq||[]).push({id,no:x.no,client:x.client,total:calc(x).total,by:SES.user.name,at:new Date().toISOString(),why:(why||'').trim()});persist();stat('Delete request sent to Admin');return vList()}
+  if(confirm('Delete invoice '+x.no+'?')){removeInv(id);vList()}}
+function removeInv(id){const x=DB.invoices.find(i=>i.id===id);if(!x)return;if(x.status!=='Draft')(DB.void=DB.void||[]).push(x.no);DB.invoices=DB.invoices.filter(i=>i.id!==id);DB.delReq=(DB.delReq||[]).filter(r=>r.id!==id);persist();syncRegistry()}
+function delOk(id){if(can('admin')&&confirm('Approve and permanently delete this invoice?')){removeInv(id);vList()}}
+function delNo(id){if(!can('admin'))return;DB.delReq=(DB.delReq||[]).filter(r=>r.id!==id);persist();vList()}
+function delPanel(){const L=DB.delReq||[];if(!L.length||!can('admin'))return'';
+  return`<div class="dc" style="margin-bottom:14px;border-left:4px solid var(--er)"><b>Delete requests awaiting your approval (${L.length})</b><div class="tw"><table><tr><th>Invoice</th><th>Client</th><th class="r">Total</th><th>Requested by</th><th>Reason</th><th></th></tr>${L.map(r=>`<tr><td>${esc(r.no)}</td><td>${esc(r.client)}</td><td class="r">${money(r.total)}</td><td>${esc(r.by)}<br><small class="mu">${(r.at||'').slice(0,10)}</small></td><td>${esc(r.why||'—')}</td><td style="white-space:nowrap"><button class="d" onclick="delOk('${esc(r.id)}')">Approve delete</button> <button class="g" onclick="delNo('${esc(r.id)}')">Reject</button></td></tr>`).join('')}</table></div></div>`}
 function vEdit(){const i=cur;
   $('#app').innerHTML=`<div class="grid">
   <div><label>Invoice no.</label><input value="${esc(i.no)}" oninput="cur.no=this.value"></div>
