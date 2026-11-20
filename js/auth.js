@@ -1,7 +1,7 @@
 /* Sign-in, registration, session handling, idle timeout and password modal. */
 function authView(mode='in',msg='',ok=false){document.body.classList.remove('in');
   const f=(id,l,t='text',ph='')=>`<div><label>${l}</label><input id="${id}" type="${t}" placeholder="${ph}" autocomplete="${t=='password'?(id=='rp1'||id=='rp2'?'new-password':'current-password'):'off'}"></div>`;
-  $('#auth').innerHTML=`<div class="acard"><img class="alogo-img" src="assets/logo.svg" alt="CRTC"><h2>Test Rate Invoice System</h2><p class="mu" style="margin:0">Authorised users only</p>
+  $('#auth').innerHTML=`<div class="acard"><img class="alogo-img" src="assets/logo.svg" alt="CRTC"><h2>CRTC Invoice System</h2><p class="mu" style="margin:0">Authorised users only</p>
   <div class="atabs"><button class="${mode=='in'?'on':''}" onclick="authView('in')">Sign in</button><button class="${mode=='reg'?'on':''}" onclick="authView('reg')">Register</button></div>
   <div id="am" class="amsg ${ok?'ok':'bad'}" style="${msg?'':'display:none'}">${esc(msg)}</div>
   ${mode=='in'?`<div class="agrid">${f('lem','Email','email')}${f('lpw','Password','password')}</div><button class="afull" onclick="doLogin()">Sign in</button>`
