@@ -70,7 +70,7 @@ function vReports(){const cl=[...new Set(DB.invoices.map(i=>i.client).filter(Boo
   <label>Remarks</label><textarea rows="3" oninput="RPT.remarks=this.value;rptDraw()">${esc(RPT.remarks)}</textarea>
   <label>Saved templates</label><div class="row" style="margin:0"><select id="rps" style="flex:1"><option value="">Select…</option>${P.map((x,j)=>`<option value="${j}">${esc(x.name)}</option>`).join('')}</select><button class="g" onclick="rptLoad()">Load</button><button class="g" onclick="rptDelPre()">✕</button></div>
   <div class="row" style="margin:8px 0 0"><button class="g" onclick="rptSave()">Save current settings as template</button></div>
-  <div class="row" style="margin:14px 0 0"><button onclick="window.print()">🖨 Print / Save PDF</button><button onclick="rptPDF()">⬇ Download PDF</button></div>
+  <div class="row" style="margin:14px 0 0"><button onclick="rptPrint()">🖨 Print / Save PDF</button><button onclick="rptPDF()">⬇ Download PDF</button></div>
   <p class="mu" style="font-size:12px">Tip: for long reports use <b>Print / Save PDF</b> (choose A4, margins default, headers and footers off). Chrome or Edge recommended.</p></div>
   <div class="rwrap" id="rwrap"><div id="rdoc" class="rdoc"></div></div></div>`;rptDraw()}
 function rptPre(j){const k=Object.keys(RPRE)[j];RPT.sec=Object.fromEntries(RPRE[k].map(x=>[x,1]));RPT.title=k==='Client statement'?'Client Statement':k==='Management summary'?'Management Report':k;vReports()}
@@ -78,10 +78,15 @@ function rptSave(){if(!can('write'))return alert('Only users who can edit data c
   DB.rptPresets=(DB.rptPresets||[]).filter(x=>x.name!==n).concat({name:n,cfg:structuredClone(RPT)});persist();vReports()}
 function rptLoad(){const j=$('#rps').value;if(j==='')return;RPT={...RPT,...structuredClone(DB.rptPresets[+j].cfg)};vReports()}
 function rptDelPre(){const j=$('#rps').value;if(j===''||!can('write')||!confirm('Delete this template?'))return;DB.rptPresets.splice(+j,1);persist();vReports()}
+/** Print with real A4 page margins (same as the PDF download): injects @page rules just for this print job. */
+function rptPrint(){let st=document.getElementById('pgstyle');if(!st){st=document.createElement('style');st.id='pgstyle';document.head.appendChild(st)}
+  st.textContent='@media print{@page{size:A4 '+(RPT.land?'landscape':'portrait')+';margin:12mm 10mm 14mm}}@media print{@page{@bottom-center{content:"Page " counter(page) " of " counter(pages);font:8pt Arial,sans-serif;color:#777}}}';
+  const done=()=>{st.remove();window.removeEventListener('afterprint',done)};window.addEventListener('afterprint',done);window.print()}
 function loadLib(src){return new Promise((ok,no)=>{if(window.html2pdf)return ok();const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>no(new Error('Could not load the PDF library (internet needed). Use "Print / Save PDF" instead.'));document.head.appendChild(s)})}
 async function rptPDF(){const e=$('#rdoc');if(!e)return;loader('Generating PDF…');const z=e.style.zoom;
   try{await loadLib(HTML2PDF);e.style.zoom=1;e.classList.add('pdfing');await new Promise(r=>setTimeout(r,60));
-    const pages=Math.max(1,e.scrollHeight/((RPT.land?210:297)*3.78)),sc=pages>12?1:pages>8?1.3:pages>5?1.6:2;
+    const pw=RPT.land?297:210,ph=RPT.land?210:297,cap=Math.floor(e.offsetWidth*(ph-26)/pw),ex=e.scrollHeight%cap,pages=Math.max(1,e.scrollHeight/cap),sc=pages>12?1:pages>8?1.3:pages>5?1.6:2;
+    if(e.scrollHeight>cap&&ex>0&&ex<=8){e.style.height=(e.scrollHeight-ex)+'px';e.style.overflow='hidden'}   // avoid a blank trailing page caused by a few pixels
     await html2pdf().set({margin:[12,0,14,0],filename:'CRTC_Report_'+new Date().toISOString().slice(0,10)+'.pdf',image:{type:'jpeg',quality:.95},html2canvas:{scale:sc,useCORS:true,backgroundColor:'#ffffff',scrollY:0},jsPDF:{unit:'mm',format:'a4',orientation:RPT.land?'landscape':'portrait'},pagebreak:{mode:['css','legacy'],avoid:['tr','.rk','.rsec h3','.rsign']}})
       .from(e).toPdf().get('pdf').then(pdf=>{const n=pdf.internal.getNumberOfPages(),w=pdf.internal.pageSize.getWidth(),h=pdf.internal.pageSize.getHeight();for(let p=1;p<=n;p++){pdf.setPage(p);pdf.setFontSize(8);pdf.setTextColor(120);pdf.text('Page '+p+' of '+n,w/2,h-6,{align:'center'})}}).save();
-  }catch(x){alert((x&&x.message)||'PDF generation failed. Use "Print / Save PDF" instead.')}finally{e.classList.remove('pdfing');e.style.zoom=z;unloader()}}
+  }catch(x){alert((x&&x.message)||'PDF generation failed. Use "Print / Save PDF" instead.')}finally{e.classList.remove('pdfing');e.style.zoom=z;e.style.height='';e.style.overflow='';unloader()}}
